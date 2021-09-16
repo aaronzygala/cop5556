@@ -9,13 +9,27 @@ public class Token implements IPLPToken{
 	String stringValue;
 	int intValue;
 	
-	public Token(Kind kind, String text, int line, int pos, String stringValue, int intValue) {
+	public Token(Kind kind, String text, int line, int pos) {
+		this.k = kind;
+		this.text = text;
+		this.line = line;
+		this.pos = pos;
+	}
+	
+	public Token(Kind kind, String text, int line, int pos, int intValue) {
+		this.k = kind;
+		this.text = text;
+		this.line = line;
+		this.pos = pos;
+		this.intValue = intValue;
+	}
+	
+	public Token(Kind kind, String text, int line, int pos, String stringValue) {
 		this.k = kind;
 		this.text = text;
 		this.line = line;
 		this.pos = pos;
 		this.stringValue = stringValue;
-		this.intValue = intValue;
 	}
 	
 	public Kind getKind() {
@@ -33,7 +47,6 @@ public class Token implements IPLPToken{
 	public int getCharPositionInLine() {
 		return this.pos;
 	}
-
 	public String getStringValue() {
 		if(this.k == Kind.STRING_LITERAL)
 		{
@@ -41,7 +54,6 @@ public class Token implements IPLPToken{
 		}
 		return null;
 	}
-
 	public int getIntValue() {
 		if(this.k == Kind.INT_LITERAL)
 		{

@@ -21,17 +21,19 @@ public class Lexer implements IPLPLexer{
 		StringBuilder str = new StringBuilder();
 		int currentLine = 1;
 		int currentPos = 0;
+		Kind k;
+		String text;
 		
 		for(char c : input.toCharArray()) {
 			switch(c) {
 				case ' ', '\n', '\t', '\r':
 					if(str.length() > 0) {
-						String text = str.toString();
+						text = str.toString();
 						
-						Kind k = getKind(text, currentLine, currentPos);
-						tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), "", 0));
+						k = findKind(text, currentLine, currentPos);
+						tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
+						str.setLength(0);
 					}
-					str.setLength(0);
 					
 					if(c == '\n' || c == '\r') {
 						currentLine++;
@@ -41,25 +43,61 @@ public class Lexer implements IPLPLexer{
 						currentPos++;
 					}
 					continue;
+					
+				case ',', ':', ';', '(', ')', '[', ']', '+', '-', '<', '>':
+					if(str.length() > 0) {
+						text = str.toString();
+						
+						k = findKind(text, currentLine, currentPos);
+						tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
+					}
+					text = Character.toString(c);
+					k = findKind(text, currentLine, currentPos);
+					tokenList.add(new Token(k, text, currentLine, currentPos));
+					str.setLength(0);
+					currentPos++;
+					continue;
+				case '!':
+					if(str.length() > 0) {
+						text = str.toString();
+						
+						k = findKind(text, currentLine, currentPos);
+						tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
+						str.setLength(0);
+					}
+					str.append(c);
+					currentPos++;
+					continue;
 				default:
+					text = str.toString();
+					if(str.length() > 0 && Character.isDigit(str.charAt(0)) && !Character.isDigit(c)) {
+						
+						k = findKind(text, currentLine, currentPos);
+						tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), Integer.parseInt(text)));
+						str.setLength(0);
+					}
+					else if(text.equals("!=") || text.equals("||") || text.equals("&&") || text.equals("==")) {						
+						k = findKind(text, currentLine, currentPos);
+						tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
+						str.setLength(0);
+					}
 					str.append(c);
 					currentPos++;
 			}
 		}
 		
 		if(str.length() > 0) {
-			String text = str.toString();
+			text = str.toString();
 			
-			Kind k = getKind(text, currentLine, currentPos);
-			tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), "", 0));
+			k = findKind(text, currentLine, currentPos);
+			tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
 		}
 		return tokenList;
 	}
-	
-	private static Kind getKind(String s, int line, int pos) throws LexicalException {
+	private static Kind findKind(String s, int line, int pos) throws LexicalException {
 		Character c = s.charAt(0);
 		Kind rv = Kind.ERROR;
-		if(Character.isLetter(c)) {
+		if(Character.isLetter(c) || c == '$' || c == '_') {
 			switch(s) { //keywords and identifiers
 				case "FUN": rv = Kind.KW_FUN; break;
 				case "DO":  rv = Kind.KW_DO; break;
@@ -121,7 +159,7 @@ public class Lexer implements IPLPLexer{
 	}
 	
 	public IPLPToken nextToken() throws LexicalException {
-		IPLPToken rv = new Token(Kind.EOF, "", 0, 0, "", 0);
+		IPLPToken rv = new Token(Kind.EOF, "", 0, 0);
 		if(tokenPos < tokenList.size()) {
 			rv = tokenList.get(tokenPos);
 			this.tokenPos++;
@@ -135,18 +173,19 @@ public class Lexer implements IPLPLexer{
 	
 	public static void main(String[] args) throws LexicalException {
 		String input = """
-				abc
-				  def
-				     ghi
-
-				""";
+			    !=&&||
+							""";
 		IPLPLexer lexer = new Lexer(input);
 		
 		IPLPToken t = lexer.nextToken();
-		System.out.println(t.getCharPositionInLine());
+		System.out.println(t.getKind());
 		t = lexer.nextToken();
-		System.out.println(t.getCharPositionInLine());
+		System.out.println(t.getKind());
 		t = lexer.nextToken();
-		System.out.println(t.getCharPositionInLine());
+		System.out.println(t.getKind());
+		t = lexer.nextToken();
+		System.out.println(t.getKind());
+		t = lexer.nextToken();
+		System.out.println(t.getKind());
 ;	}
 }
