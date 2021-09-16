@@ -1,5 +1,7 @@
 package edu.ufl.cise.plpfa21.assignment1;
 
+import static org.junit.Assert.assertTrue;
+
 import java.util.ArrayList;
 
 import edu.ufl.cise.plpfa21.assignment1.PLPTokenKinds.Kind;
@@ -23,8 +25,42 @@ public class Lexer implements IPLPLexer{
 		int currentPos = 0;
 		Kind k;
 		String text;
-		
+		Boolean inComment = false;
+		Boolean inSingleString = false;
+		Boolean inDoubleString = false;
+	
 		for(char c : input.toCharArray()) {
+			if(inComment) {
+				if(c == '/' && input.charAt(currentPos - 1) == '*') {
+					inComment = false;
+				}
+				currentPos++;
+				continue;
+			}
+			if(inSingleString || inDoubleString) { 
+				str.append(c);
+				currentPos++;
+				if(inSingleString && c == '\'') {
+					inSingleString = false;
+					text = str.toString();
+					
+					k = findKind(text, currentLine, currentPos);
+					tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), text.replace("\'", "")));
+					str.setLength(0);
+				}
+					
+				else if(inDoubleString && c == '\"') {
+					inDoubleString = false;
+					text = str.toString();
+					
+					k = findKind(text, currentLine, currentPos);
+					tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), text.replace("\"", "")));
+					str.setLength(0);
+				}
+				
+				
+				continue;
+			}
 			switch(c) {
 				case ' ', '\n', '\t', '\r':
 					if(str.length() > 0) {
@@ -61,6 +97,34 @@ public class Lexer implements IPLPLexer{
 					if(str.length() > 0) {
 						text = str.toString();
 						
+						k = findKind(text, currentLine, currentPos);
+						tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
+						str.setLength(0);
+					}
+					str.append(c);
+					currentPos++;
+					continue;
+				case '*':
+					if(str.length() > 0 && str.charAt(str.length() - 1) == '/') {
+						inComment = true;
+						if(str.length() > 1) {
+							text = str.toString();
+							text = text.substring(0, str.length() - 1);
+							
+							k = findKind(text, currentLine, currentPos);
+							tokenList.add(new Token(k, text, currentLine, currentPos-text.length()-1));
+						}
+						str.setLength(0);
+					}
+					currentPos++;
+					continue;
+				case '\'', '\"':
+					if(c == '\'')
+						inSingleString = true;
+					else
+						inDoubleString = true;
+					if(str.length() > 0) {
+						text = str.toString();
 						k = findKind(text, currentLine, currentPos);
 						tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
 						str.setLength(0);
@@ -124,12 +188,10 @@ public class Lexer implements IPLPLexer{
 			}
 		}
 		else if(Character.isDigit(c)) { //int literals
-			try {
-				rv = Kind.INT_LITERAL;
-			}
-			catch(NumberFormatException e) {
-				throw new LexicalException("ERROR! Number Format Exception!", line, pos);
-			}
+			rv = Kind.INT_LITERAL;
+		}
+		else if(c == '\'' || c == '\"') {
+			rv = Kind.STRING_LITERAL;
 		}
 		else { //symbols
 			switch(s) {
@@ -168,24 +230,27 @@ public class Lexer implements IPLPLexer{
 		if(rv.getKind() == Kind.ERROR) {
 			throw new LexicalException("Parsing Error! Illegal Character Detected", rv.getLine(), rv.getCharPositionInLine());
 		}
+		else if(rv.getKind() == Kind.INT_LITERAL) {
+			try{
+				Integer.parseInt(rv.getText());
+			}catch(NumberFormatException e) {
+				throw new LexicalException("Int Error! Integer out of range!", rv.getLine(), rv.getCharPositionInLine());
+			}
+		}
 		return rv;
 	}
 	
 	public static void main(String[] args) throws LexicalException {
 		String input = """
-			    !=&&||
+			    'literal' "literal2"
 							""";
 		IPLPLexer lexer = new Lexer(input);
 		
 		IPLPToken t = lexer.nextToken();
-		System.out.println(t.getKind());
+		System.out.println(t.getCharPositionInLine());
 		t = lexer.nextToken();
 		System.out.println(t.getKind());
 		t = lexer.nextToken();
-		System.out.println(t.getKind());
-		t = lexer.nextToken();
-		System.out.println(t.getKind());
-		t = lexer.nextToken();
-		System.out.println(t.getKind());
-;	}
+		
+	}
 }
