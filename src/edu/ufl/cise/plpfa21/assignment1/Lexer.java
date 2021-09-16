@@ -10,13 +10,13 @@ public class Lexer implements IPLPLexer{
 	ArrayList<IPLPToken> tokenList;
 	int tokenPos;
 	
-	public Lexer(String input) {
+	public Lexer(String input) throws LexicalException {
 		this.tokenPos = 0;
 		this.input = input;
 		this.tokenList = readInput(input);
 	}
 	//Kind kind, String text, int line, int pos, String stringValue, int intValue
-	public static ArrayList<IPLPToken> readInput(String input){
+	public static ArrayList<IPLPToken> readInput(String input) throws LexicalException{
 		ArrayList<IPLPToken> tokenList = new ArrayList<>();
 		StringBuilder str = new StringBuilder();
 		int currentLine = 1;
@@ -26,8 +26,10 @@ public class Lexer implements IPLPLexer{
 			switch(c) {
 				case ' ', '\n', '\t', '\r':
 					if(str.length() > 0) {
-						Kind k = getKind(str.toString());
-						tokenList.add(new Token(k, str.toString(), currentLine, currentPos, "", 0));
+						String text = str.toString();
+						
+						Kind k = getKind(text, currentLine, currentPos);
+						tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), "", 0));
 					}
 					str.setLength(0);
 					
@@ -35,7 +37,9 @@ public class Lexer implements IPLPLexer{
 						currentLine++;
 						currentPos = 0;
 					}
-					currentPos++;
+					else {
+						currentPos++;
+					}
 					continue;
 				default:
 					str.append(c);
@@ -44,17 +48,19 @@ public class Lexer implements IPLPLexer{
 		}
 		
 		if(str.length() > 0) {
-			Kind k = getKind(str.toString());
-			tokenList.add(new Token(k, str.toString(), currentLine, currentPos, "", 0));
+			String text = str.toString();
+			
+			Kind k = getKind(text, currentLine, currentPos);
+			tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), "", 0));
 		}
 		return tokenList;
 	}
 	
-	private static Kind getKind(String s) {
+	private static Kind getKind(String s, int line, int pos) throws LexicalException {
 		Character c = s.charAt(0);
 		Kind rv = Kind.ERROR;
 		if(Character.isLetter(c)) {
-			switch(s) {
+			switch(s) { //keywords and identifiers
 				case "FUN": rv = Kind.KW_FUN; break;
 				case "DO":  rv = Kind.KW_DO; break;
 				case "END": rv = Kind.KW_END; break;
@@ -79,11 +85,37 @@ public class Lexer implements IPLPLexer{
 				default: rv = Kind.IDENTIFIER;
 			}
 		}
-		else if(Character.isDigit(c)) {
-			
+		else if(Character.isDigit(c)) { //int literals
+			try {
+				rv = Kind.INT_LITERAL;
+			}
+			catch(NumberFormatException e) {
+				throw new LexicalException("ERROR! Number Format Exception!", line, pos);
+			}
 		}
-		else {
+		else { //symbols
+			switch(s) {
 			
+			case"(": rv = Kind.LPAREN; break;
+			case":": rv = Kind.COLON; break;
+			case",": rv = Kind.COMMA; break;
+			case ")": rv = Kind.RPAREN; break;
+			case "=": rv = Kind.ASSIGN; break;
+			case ";": rv = Kind.SEMI; break;
+			case "&&": rv = Kind.AND; break;
+			case "||": rv = Kind.OR; break;
+			case "<": rv = Kind.LT; break;
+			case ">": rv = Kind.GT; break;
+			case "==": rv = Kind.EQUALS; break;
+			case "!=": rv = Kind.NOT_EQUALS; break;
+			case "+": rv = Kind.PLUS; break;
+			case "-": rv = Kind.MINUS; break;
+			case "*": rv = Kind.TIMES; break;
+			case "/": rv = Kind.DIV; break;
+			case "!": rv = Kind.BANG; break;
+			case "[": rv = Kind.LSQUARE; break;
+			case "]": rv = Kind.RSQUARE; break;
+			}
 		}
 		return rv;
 	}
@@ -93,6 +125,10 @@ public class Lexer implements IPLPLexer{
 		if(tokenPos < tokenList.size()) {
 			rv = tokenList.get(tokenPos);
 			this.tokenPos++;
+		}
+		
+		if(rv.getKind() == Kind.ERROR) {
+			throw new LexicalException("Parsing Error! Illegal Character Detected", rv.getLine(), rv.getCharPositionInLine());
 		}
 		return rv;
 	}
@@ -107,6 +143,10 @@ public class Lexer implements IPLPLexer{
 		IPLPLexer lexer = new Lexer(input);
 		
 		IPLPToken t = lexer.nextToken();
+		System.out.println(t.getCharPositionInLine());
+		t = lexer.nextToken();
+		System.out.println(t.getCharPositionInLine());
+		t = lexer.nextToken();
 		System.out.println(t.getCharPositionInLine());
 ;	}
 }
