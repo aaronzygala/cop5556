@@ -1,9 +1,6 @@
 package edu.ufl.cise.plpfa21.assignment1;
 
-import static org.junit.Assert.assertTrue;
-
 import java.util.ArrayList;
-
 import edu.ufl.cise.plpfa21.assignment1.PLPTokenKinds.Kind;
 
 public class Lexer implements IPLPLexer{
@@ -12,13 +9,13 @@ public class Lexer implements IPLPLexer{
 	ArrayList<IPLPToken> tokenList;
 	int tokenPos;
 	
-	public Lexer(String input) throws LexicalException {
+	public Lexer(String input){
 		this.tokenPos = 0;
 		this.input = input;
 		this.tokenList = readInput(input);
 	}
 	//Kind kind, String text, int line, int pos, String stringValue, int intValue
-	public static ArrayList<IPLPToken> readInput(String input) throws LexicalException{
+	public static ArrayList<IPLPToken> readInput(String input){
 		ArrayList<IPLPToken> tokenList = new ArrayList<>();
 		StringBuilder str = new StringBuilder();
 		int currentLine = 1;
@@ -33,6 +30,7 @@ public class Lexer implements IPLPLexer{
 			if(inComment) {
 				if(c == '/' && input.charAt(currentPos - 1) == '*') {
 					inComment = false;
+					str.setLength(0);
 				}
 				currentPos++;
 				continue;
@@ -67,7 +65,13 @@ public class Lexer implements IPLPLexer{
 						text = str.toString();
 						
 						k = findKind(text, currentLine, currentPos);
-						tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
+						if(k == Kind.INT_LITERAL) {
+							tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), Integer.parseInt(text)));
+
+						}
+						else {
+							tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
+						}
 						str.setLength(0);
 					}
 					
@@ -85,7 +89,13 @@ public class Lexer implements IPLPLexer{
 						text = str.toString();
 						
 						k = findKind(text, currentLine, currentPos);
-						tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
+						if(k == Kind.INT_LITERAL) {
+							tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), Integer.parseInt(text)));
+
+						}
+						else {
+							tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
+						}
 					}
 					text = Character.toString(c);
 					k = findKind(text, currentLine, currentPos);
@@ -93,18 +103,7 @@ public class Lexer implements IPLPLexer{
 					str.setLength(0);
 					currentPos++;
 					continue;
-				case '!':
-					if(str.length() > 0) {
-						text = str.toString();
-						
-						k = findKind(text, currentLine, currentPos);
-						tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
-						str.setLength(0);
-					}
-					str.append(c);
-					currentPos++;
-					continue;
-				case '*':
+				case '*', '/':
 					if(str.length() > 0 && str.charAt(str.length() - 1) == '/') {
 						inComment = true;
 						if(str.length() > 1) {
@@ -112,9 +111,32 @@ public class Lexer implements IPLPLexer{
 							text = text.substring(0, str.length() - 1);
 							
 							k = findKind(text, currentLine, currentPos);
+							if(k == Kind.INT_LITERAL) {
+								tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), Integer.parseInt(text)));
+
+							}
+							else {
+								tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
+							}
 							tokenList.add(new Token(k, text, currentLine, currentPos-text.length()-1));
 						}
 						str.setLength(0);
+					}
+					else {
+						if(str.length() == 1) {
+							text = str.toString();
+							
+							k = findKind(text, currentLine, currentPos);
+							if(k == Kind.INT_LITERAL) {
+								tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), Integer.parseInt(text)));
+
+							}
+							else {
+								tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
+							}
+							str.setLength(0);
+						}
+						str.append(c);
 					}
 					currentPos++;
 					continue;
@@ -126,7 +148,30 @@ public class Lexer implements IPLPLexer{
 					if(str.length() > 0) {
 						text = str.toString();
 						k = findKind(text, currentLine, currentPos);
+						if(k == Kind.INT_LITERAL) {
+							tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), Integer.parseInt(text)));
+
+						}
+						else {
+							tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
+						}
 						tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
+						str.setLength(0);
+					}
+					str.append(c);
+					currentPos++;
+					continue;
+				case '!', '&', '|':
+					if(str.length() > 0 && str.charAt(0) != c) {
+						text = str.toString();
+						k = findKind(text, currentLine, currentPos);
+						if(k == Kind.INT_LITERAL) {
+							tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), Integer.parseInt(text)));
+
+						}
+						else {
+							tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
+						}
 						str.setLength(0);
 					}
 					str.append(c);
@@ -145,6 +190,30 @@ public class Lexer implements IPLPLexer{
 						tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
 						str.setLength(0);
 					}
+					
+					if(str.length() > 0 && str.charAt(str.length() - 1) == '!' && c != '=') {
+						k = findKind(text, currentLine, currentPos);
+						if(k == Kind.INT_LITERAL) {
+							tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), Integer.parseInt(text)));
+
+						}
+						else {
+							tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
+						}
+						str.setLength(0);
+					}
+					
+					if(str.length() == 1 && (str.charAt(0) == '*' || str.charAt(0) == '/')) {
+						k = findKind(text, currentLine, currentPos);
+						if(k == Kind.INT_LITERAL) {
+							tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), Integer.parseInt(text)));
+
+						}
+						else {
+							tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
+						}
+						str.setLength(0);
+					}
 					str.append(c);
 					currentPos++;
 			}
@@ -154,11 +223,17 @@ public class Lexer implements IPLPLexer{
 			text = str.toString();
 			
 			k = findKind(text, currentLine, currentPos);
-			tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
+			if(k == Kind.INT_LITERAL) {
+				tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), Integer.parseInt(text)));
+
+			}
+			else {
+				tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
+			}
 		}
 		return tokenList;
 	}
-	private static Kind findKind(String s, int line, int pos) throws LexicalException {
+	private static Kind findKind(String s, int line, int pos){
 		Character c = s.charAt(0);
 		Kind rv = Kind.ERROR;
 		if(Character.isLetter(c) || c == '$' || c == '_') {
@@ -242,12 +317,18 @@ public class Lexer implements IPLPLexer{
 	
 	public static void main(String[] args) throws LexicalException {
 		String input = """
-			    'literal' "literal2"
+			    TRUE&&FALSE||TRUE
 							""";
 		IPLPLexer lexer = new Lexer(input);
 		
 		IPLPToken t = lexer.nextToken();
-		System.out.println(t.getCharPositionInLine());
+		System.out.println(t.getKind());
+		t = lexer.nextToken();
+		System.out.println(t.getKind());
+		t = lexer.nextToken();
+		System.out.println(t.getKind());
+		t = lexer.nextToken();
+		System.out.println(t.getKind());
 		t = lexer.nextToken();
 		System.out.println(t.getKind());
 		t = lexer.nextToken();
