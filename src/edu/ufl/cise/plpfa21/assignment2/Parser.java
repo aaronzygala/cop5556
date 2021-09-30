@@ -102,8 +102,9 @@ public class Parser implements IPLPParser{
 	}
 	
 	private void block() throws SyntaxException {
-		while(true)
+		while(!(isKind(t, Kind.KW_END) || isKind(t, Kind.KW_DEFAULT))) {
 			statement();
+		}
 	}
 	private void nameDef() throws SyntaxException {
 		match(Kind.IDENTIFIER);
@@ -319,7 +320,9 @@ public class Parser implements IPLPParser{
 	
 	public static void main(String[] args) throws LexicalException {
 		String input = """
-				VAL a: STRING = "hello";
+				FUN func() DO
+				WHILE x>0 DO x=x-1; END
+				END
 				""";
 		IPLPParser parser =  new Parser(new Lexer(input));
 

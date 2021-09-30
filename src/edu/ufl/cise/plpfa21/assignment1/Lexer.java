@@ -36,6 +36,10 @@ public class Lexer implements IPLPLexer{
 				continue;
 			}
 			if(inSingleString || inDoubleString) { 
+				if(c == '\n' || c == '\r')
+					currentLine++;
+					currentPos = 0;
+					
 				str.append(c);
 				currentPos++;
 				if(inSingleString && c == '\'') {
@@ -317,7 +321,10 @@ public class Lexer implements IPLPLexer{
 	
 	public static void main(String[] args) throws LexicalException {
 		String input = """
-			    TRUE&&FALSE||TRUE
+				DO
+				END
+				IF THEN else
+
 							""";
 		IPLPLexer lexer = new Lexer(input);
 		
@@ -332,6 +339,7 @@ public class Lexer implements IPLPLexer{
 		t = lexer.nextToken();
 		System.out.println(t.getKind());
 		t = lexer.nextToken();
+
 		
 	}
 }
