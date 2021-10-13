@@ -214,8 +214,7 @@ public class Lexer implements IPLPLexer{
 					}
 					else {
 						String text = str.toString();
-						int val = Integer.parseInt(text);
-						tokenList.add(new Token(Kind.INT_LITERAL, text, currentLine, currentPos-text.length(), val));
+						tokenList.add(new Token(Kind.INT_LITERAL, text, currentLine, currentPos-text.length()));
 						str.setLength(0);
 						state = State.START;
 						
@@ -317,6 +316,8 @@ public class Lexer implements IPLPLexer{
 		else if(rv.getKind() == Kind.INT_LITERAL) {
 			try{
 				Integer.parseInt(rv.getText());
+				tokenList.set(tokenPos-1, new Token(rv.getKind(), rv.getText(), rv.getLine(), rv.getCharPositionInLine(), Integer.parseInt(rv.getText())));
+				rv = tokenList.get(tokenPos-1);
 			}catch(NumberFormatException e) {
 				throw new LexicalException("Int Error! Integer out of range!", rv.getLine(), rv.getCharPositionInLine());
 			}

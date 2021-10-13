@@ -16,7 +16,6 @@ import edu.ufl.cise.plpfa21.assignment3.ast.IExpression;
 import edu.ufl.cise.plpfa21.assignment3.ast.IFunctionDeclaration;
 import edu.ufl.cise.plpfa21.assignment3.ast.IIdentifier;
 import edu.ufl.cise.plpfa21.assignment3.ast.INameDef;
-import edu.ufl.cise.plpfa21.assignment3.ast.IProgram;
 import edu.ufl.cise.plpfa21.assignment3.ast.IStatement;
 import edu.ufl.cise.plpfa21.assignment3.ast.IType;
 import edu.ufl.cise.plpfa21.assignment3.ast.IType.TypeKind;
@@ -24,7 +23,6 @@ import edu.ufl.cise.plpfa21.assignment3.astimpl.AssignmentStatement__;
 import edu.ufl.cise.plpfa21.assignment3.astimpl.BinaryExpression__;
 import edu.ufl.cise.plpfa21.assignment3.astimpl.Block__;
 import edu.ufl.cise.plpfa21.assignment3.astimpl.BooleanLiteralExpression__;
-import edu.ufl.cise.plpfa21.assignment3.astimpl.Declaration__;
 import edu.ufl.cise.plpfa21.assignment3.astimpl.FunctionDeclaration___;
 import edu.ufl.cise.plpfa21.assignment3.astimpl.IdentExpression__;
 import edu.ufl.cise.plpfa21.assignment3.astimpl.Identifier__;
@@ -468,15 +466,7 @@ public class Parser implements IPLPParser{
 	
 	public static void main(String[] args) throws LexicalException {
 		String input = """
-				FUN func() DO
-				SWITCH x
-				CASE 0 : y=0;
-				CASE 1 : y=1;
-				CASE 2 : y=2;
-				DEFAULT y=3;
-				END  /*SWITCH*/
-				END  /*FUN*/
-
+				VAL a: INT = 0;
 				""";
 		IPLPParser parser =  new Parser(new Lexer(input));
 
