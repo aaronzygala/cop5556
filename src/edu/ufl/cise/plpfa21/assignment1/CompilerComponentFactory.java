@@ -18,6 +18,4 @@ public class CompilerComponentFactory {
 		IPLPParser parser =  new Parser(getLexer(input));
 		return parser;
 	}
-	
-
 }

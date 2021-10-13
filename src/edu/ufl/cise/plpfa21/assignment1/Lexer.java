@@ -8,231 +8,236 @@ public class Lexer implements IPLPLexer{
 	String input;
 	ArrayList<IPLPToken> tokenList;
 	int tokenPos;
+	private enum State {START, HAVE_EQUAL, HAVE_NEQUAL, DIGITS, IDENT_PART, COMMENT, STRING, BOOL_OP}
 	
 	public Lexer(String input){
 		this.tokenPos = 0;
 		this.input = input;
-		this.tokenList = readInput(input);
+		this.tokenList = new ArrayList<>();
+		try {
+			this.tokenList = readInput(input);
+		} catch (LexicalException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	//Kind kind, String text, int line, int pos, String stringValue, int intValue
-	public static ArrayList<IPLPToken> readInput(String input){
+	public static ArrayList<IPLPToken> readInput(String input) throws LexicalException{
 		ArrayList<IPLPToken> tokenList = new ArrayList<>();
 		StringBuilder str = new StringBuilder();
 		int currentLine = 1;
 		int currentPos = 0;
 		Kind k;
-		String text;
-		Boolean inComment = false;
-		Boolean inSingleString = false;
-		Boolean inDoubleString = false;
-	
-		for(char c : input.toCharArray()) {
-			if(inComment) {
-				if(c == '/' && input.charAt(currentPos - 1) == '*') {
-					inComment = false;
-					str.setLength(0);
-				}
-				currentPos++;
-				continue;
-			}
-			if(inSingleString || inDoubleString) { 
-				if(c == '\n' || c == '\r')
-					currentLine++;
-					currentPos = 0;
-					
-				str.append(c);
-				currentPos++;
-				if(inSingleString && c == '\'') {
-					inSingleString = false;
-					text = str.toString();
-					
-					k = findKind(text, currentLine, currentPos);
-					tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), text.replace("\'", "")));
-					str.setLength(0);
-				}
-					
-				else if(inDoubleString && c == '\"') {
-					inDoubleString = false;
-					text = str.toString();
-					
-					k = findKind(text, currentLine, currentPos);
-					tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), text.replace("\"", "")));
-					str.setLength(0);
-				}
-				
-				
-				continue;
-			}
-			switch(c) {
-				case ' ', '\n', '\t', '\r':
-					if(str.length() > 0) {
-						text = str.toString();
+		State state = State.START;
+		char prevChar=0;
+		char nextChar=0;
+		
+		int idx = 0;
+		char[] chars = input.toCharArray();
+		
+		while(idx < chars.length) {
+			char c = chars[idx];
+			
+			if(idx > 0)
+				prevChar = input.charAt(idx-1);
+			if(idx < chars.length-1)
+				nextChar = input.charAt(idx+1);
+			switch(state) {
+				case START:
+					switch(c) {
+						case ' ', '\t':
+							idx++; currentPos++;
+							continue;
 						
-						k = findKind(text, currentLine, currentPos);
-						if(k == Kind.INT_LITERAL) {
-							tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), Integer.parseInt(text)));
+						case '\n', '\r':
+							idx++;
+							currentPos = 0;
+							currentLine++;
+							continue;
 
-						}
-						else {
-							tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
-						}
-						str.setLength(0);
-					}
-					
-					if(c == '\n' || c == '\r') {
-						currentLine++;
-						currentPos = 0;
-					}
-					else {
-						currentPos++;
-					}
-					continue;
-					
-				case ',', ':', ';', '(', ')', '[', ']', '+', '-', '<', '>':
-					if(str.length() > 0) {
-						text = str.toString();
-						
-						k = findKind(text, currentLine, currentPos);
-						if(k == Kind.INT_LITERAL) {
-							tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), Integer.parseInt(text)));
+						case '0':
+							tokenList.add(new Token(Kind.INT_LITERAL, "0", currentLine, currentPos, 0));
+							idx++; currentPos++;
+							continue;
 
-						}
-						else {
-							tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
-						}
-					}
-					text = Character.toString(c);
-					k = findKind(text, currentLine, currentPos);
-					tokenList.add(new Token(k, text, currentLine, currentPos));
-					str.setLength(0);
-					currentPos++;
-					continue;
-				case '*', '/':
-					if(str.length() > 0 && str.charAt(str.length() - 1) == '/') {
-						inComment = true;
-						if(str.length() > 1) {
-							text = str.toString();
-							text = text.substring(0, str.length() - 1);
-							
+						case '+', ',', ';', ':', '(', ')', '[', ']', '<', '>', '-':
+							String text = String.valueOf(c);
 							k = findKind(text, currentLine, currentPos);
-							if(k == Kind.INT_LITERAL) {
-								tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), Integer.parseInt(text)));
+							tokenList.add(new Token(k, text, currentLine, currentPos));
+							idx++; currentPos++;
+							continue;
 
+						case '*':
+							tokenList.add(new Token(Kind.TIMES, "*", currentLine, currentPos));
+							idx++; currentPos++;
+							continue;
+
+						case '=':
+							if(nextChar != '=') {
+								tokenList.add(new Token(Kind.ASSIGN, "=", currentLine, currentPos));
 							}
 							else {
-								tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
+								state = State.HAVE_EQUAL;
 							}
-							tokenList.add(new Token(k, text, currentLine, currentPos-text.length()-1));
-						}
-						str.setLength(0);
-					}
-					else {
-						if(str.length() == 1) {
-							text = str.toString();
-							
-							k = findKind(text, currentLine, currentPos);
-							if(k == Kind.INT_LITERAL) {
-								tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), Integer.parseInt(text)));
+							idx++; currentPos++;
+							continue;
 
+						case '!':
+							if(nextChar != '=') {
+								tokenList.add(new Token(Kind.BANG, "!", currentLine, currentPos));
 							}
 							else {
-								tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
+								state = State.HAVE_NEQUAL;
 							}
-							str.setLength(0);
+							idx++; currentPos++;
+							continue;
+
+						case '/':
+							if(nextChar == '*') {
+								state = State.COMMENT;
+							}
+							else {
+								tokenList.add(new Token(Kind.DIV, "/", currentLine, currentPos));
+							}
+							idx++; currentPos++;
+							continue;
+
+						case '&', '|':
+							str.append(c);
+							state = State.BOOL_OP;
+							idx++; currentPos++;
+							continue;
+
+						case '1', '2', '3', '4', '5', '6', '7', '8', '9':
+							str.append(c);
+							state = State.DIGITS;
+							idx++; currentPos++;
+							continue;
+
+						case '\"', '\'':
+							str.append(c);
+							state = State.STRING;
+							idx++; currentPos++;
+							continue;
+
+							
+						default:
+							if(Character.isJavaIdentifierStart(c)) {
+								idx++;
+								str.append(c);
+								state = State.IDENT_PART;
+								currentPos++;
+							}
+							else {
+								if(c != 0) {
+									tokenList.add(new Token(Kind.ERROR, "", currentLine, currentPos));		
+									idx++;currentPos++;
+								}
+							}
+							continue;
+					}
+				case STRING:
+					if(c != str.charAt(0)) {
+						idx++;
+						if(c == '\n' || c == '\r') {
+							currentLine++;
+							currentPos = 0;
 						}
 						str.append(c);
+						currentPos++;
 					}
-					currentPos++;
-					continue;
-				case '\'', '\"':
-					if(c == '\'')
-						inSingleString = true;
-					else
-						inDoubleString = true;
-					if(str.length() > 0) {
-						text = str.toString();
-						k = findKind(text, currentLine, currentPos);
-						if(k == Kind.INT_LITERAL) {
-							tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), Integer.parseInt(text)));
-
-						}
-						else {
-							tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
-						}
-						tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
-						str.setLength(0);
-					}
-					str.append(c);
-					currentPos++;
-					continue;
-				case '!', '&', '|':
-					if(str.length() > 0 && str.charAt(0) != c) {
-						text = str.toString();
-						k = findKind(text, currentLine, currentPos);
-						if(k == Kind.INT_LITERAL) {
-							tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), Integer.parseInt(text)));
-
-						}
-						else {
-							tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
-						}
-						str.setLength(0);
-					}
-					str.append(c);
-					currentPos++;
-					continue;
-				default:
-					text = str.toString();
-					if(str.length() > 0 && Character.isDigit(str.charAt(0)) && !Character.isDigit(c)) {
+					else {
+						str.append(c);
+						idx++;currentPos++;
+						state = State.START;
+						String text = str.toString();
 						
 						k = findKind(text, currentLine, currentPos);
-						tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), Integer.parseInt(text)));
+						tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), text.replaceAll(String.valueOf(str.charAt(0)), "")));
 						str.setLength(0);
 					}
-					else if(text.equals("!=") || text.equals("||") || text.equals("&&") || text.equals("==")) {						
+					continue;
+					
+				case BOOL_OP:
+					if(c == prevChar) {
+						idx++;
+						str.append(c);
+						String text = str.toString();
+						k = findKind(text, currentLine, currentPos);
+						tokenList.add(new Token(k, text, currentLine, currentPos-1));
+						str.setLength(0);
+						state = State.START;
+						currentPos++;
+					}
+					else {
+						tokenList.add(new Token(Kind.ERROR, "", currentLine, currentPos));	
+					}
+					continue;
+
+				case COMMENT:
+					if(c == '/' && prevChar == '*') {
+						state = State.START;
+					}
+					idx++;
+					currentPos++;
+					continue;
+
+				case HAVE_EQUAL:
+					if(c == '=') {
+						tokenList.add(new Token(Kind.EQUALS, "==", currentLine, currentPos-1));
+						currentPos++;
+					}
+					else {
+						tokenList.add(new Token(Kind.ERROR, "", currentLine, currentPos));	
+					}
+					idx++;
+					state = State.START;
+					continue;
+
+				case HAVE_NEQUAL:
+					if(c == '=') {
+						tokenList.add(new Token(Kind.NOT_EQUALS, "!=", currentLine, currentPos-1));
+						currentPos++;
+					}
+					else {
+						tokenList.add(new Token(Kind.ERROR, "", currentLine, currentPos));	
+					}
+					idx++;
+					state = State.START;
+					continue;
+
+				case DIGITS:
+					if(Character.isDigit(c)) {
+						idx++;
+						currentPos++;
+						str.append(c);
+					}
+					else {
+						String text = str.toString();
+						int val = Integer.parseInt(text);
+						tokenList.add(new Token(Kind.INT_LITERAL, text, currentLine, currentPos-text.length(), val));
+						str.setLength(0);
+						state = State.START;
+						
+					}
+					continue;
+
+				case IDENT_PART:
+					if(Character.isDigit(c) || Character.isLetter(c) || c == '_' || c == '$') {
+						idx++;
+						currentPos++;
+						str.append(c);
+					}
+					else {
+						String text = str.toString();
 						k = findKind(text, currentLine, currentPos);
 						tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
 						str.setLength(0);
+						state = State.START;
 					}
-					
-					if(str.length() > 0 && str.charAt(str.length() - 1) == '!' && c != '=') {
-						k = findKind(text, currentLine, currentPos);
-						if(k == Kind.INT_LITERAL) {
-							tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), Integer.parseInt(text)));
+					continue;
 
-						}
-						else {
-							tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
-						}
-						str.setLength(0);
-					}
-					
-					if(str.length() == 1 && (str.charAt(0) == '*' || str.charAt(0) == '/')) {
-						k = findKind(text, currentLine, currentPos);
-						if(k == Kind.INT_LITERAL) {
-							tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), Integer.parseInt(text)));
-
-						}
-						else {
-							tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
-						}
-						str.setLength(0);
-					}
-					str.append(c);
-					currentPos++;
-			}
-		}
-		
-		if(str.length() > 0) {
-			text = str.toString();
 			
-			k = findKind(text, currentLine, currentPos);
-			if(k == Kind.INT_LITERAL) {
-				tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), Integer.parseInt(text)));
-
-			}
-			else {
-				tokenList.add(new Token(k, text, currentLine, currentPos-text.length()));
 			}
 		}
 		return tokenList;
@@ -321,10 +326,7 @@ public class Lexer implements IPLPLexer{
 	
 	public static void main(String[] args) throws LexicalException {
 		String input = """
-				DO
-				END
-				IF THEN else
-
+			    a > (b + 2)
 							""";
 		IPLPLexer lexer = new Lexer(input);
 		
@@ -337,9 +339,7 @@ public class Lexer implements IPLPLexer{
 		t = lexer.nextToken();
 		System.out.println(t.getKind());
 		t = lexer.nextToken();
-		System.out.println(t.getKind());
-		t = lexer.nextToken();
 
-		
+
 	}
 }
