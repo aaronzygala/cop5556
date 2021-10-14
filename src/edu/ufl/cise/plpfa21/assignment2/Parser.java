@@ -174,6 +174,8 @@ public class Parser implements IPLPParser{
 
 		List<IStatement> statements = new ArrayList<>();
 		while(!(isKind(t, Kind.KW_END) || isKind(t, Kind.KW_CASE) || isKind(t, Kind.KW_DEFAULT))) {
+			//if(isKind(t,  Kind.SEMI))
+			//	throw new SyntaxException("Syntax Error at line: " + t.getLine() + " character: " + t.getCharPositionInLine(), t.getLine(), t.getCharPositionInLine());
 			statements.add(statement());
 		}
 		return new Block__(first.getLine(),first.getCharPositionInLine(), first.getText(), statements);
@@ -485,7 +487,7 @@ public class Parser implements IPLPParser{
 				}
 
 			default:
-				return null;
+				throw new SyntaxException("Syntax Error at line: " + t.getLine() + " character: " + t.getCharPositionInLine(), t.getLine(), t.getCharPositionInLine());
 		}
 	}
 	private IType type() throws SyntaxException {
