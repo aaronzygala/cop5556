@@ -27,6 +27,7 @@ public class Lexer implements IPLPLexer{
 		StringBuilder str = new StringBuilder();
 		int currentLine = 1;
 		int currentPos = 0;
+		int firstLineOfString = 0;
 		Kind k;
 		State state = State.START;
 		char prevChar=0;
@@ -115,6 +116,7 @@ public class Lexer implements IPLPLexer{
 							continue;
 
 						case '\"', '\'':
+							firstLineOfString = currentLine;
 							str.append(c);
 							state = State.STRING;
 							idx++; currentPos++;
@@ -153,14 +155,13 @@ public class Lexer implements IPLPLexer{
 						String text = str.toString();
 						
 						k = findKind(text, currentLine, currentPos);
-						tokenList.add(new Token(k, text, currentLine, currentPos-text.length(), text.replaceAll(String.valueOf(str.charAt(0)), "")));
+						tokenList.add(new Token(k, text, firstLineOfString, currentPos-text.length(), text.replaceAll(String.valueOf(str.charAt(0)), "")));
 						str.setLength(0);
 					}
 					continue;
 					
 				case BOOL_OP:
 					if(c == prevChar) {
-						idx++;
 						str.append(c);
 						String text = str.toString();
 						k = findKind(text, currentLine, currentPos);
@@ -172,6 +173,7 @@ public class Lexer implements IPLPLexer{
 					else {
 						tokenList.add(new Token(Kind.ERROR, "", currentLine, currentPos));	
 					}
+					idx++;
 					continue;
 
 				case COMMENT:
@@ -254,7 +256,7 @@ public class Lexer implements IPLPLexer{
 				case "CASE": rv = Kind.KW_CASE; break;
 				case "DEFAULT": rv = Kind.KW_DEFAULT; break;
 				case "IF": rv = Kind.KW_IF; break;
-				case "ELSE": rv = Kind.KW_ELSE; break;
+				//case "ELSE": rv = Kind.KW_ELSE; break;
 				case "WHILE": rv = Kind.KW_WHILE; break;
 				case "RETURN": rv = Kind.KW_RETURN; break;
 				case "LIST": rv = Kind.KW_LIST; break;
@@ -327,7 +329,14 @@ public class Lexer implements IPLPLexer{
 	
 	public static void main(String[] args) throws LexicalException {
 		String input = """
-			    a > (b + 2)
+			    FUN func() DO
+				SWITCH x
+				CASE 0 : y=0;
+				CASE 1 : y=1;
+				CASE 2 : y=2;
+				DEFAULT y=3;
+				END  /*SWITCH*/
+				END  /*FUN*/
 							""";
 		IPLPLexer lexer = new Lexer(input);
 		
@@ -340,6 +349,8 @@ public class Lexer implements IPLPLexer{
 		t = lexer.nextToken();
 		System.out.println(t.getKind());
 		t = lexer.nextToken();
+		System.out.println(t.getKind());
+
 
 
 	}
