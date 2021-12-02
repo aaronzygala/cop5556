@@ -12,6 +12,7 @@ import edu.ufl.cise.plpfa21.assignment3.ast.IBlock;
 import edu.ufl.cise.plpfa21.assignment3.ast.IBooleanLiteralExpression;
 import edu.ufl.cise.plpfa21.assignment3.ast.IDeclaration;
 import edu.ufl.cise.plpfa21.assignment3.ast.IExpression;
+import edu.ufl.cise.plpfa21.assignment3.ast.IExpressionStatement;
 import edu.ufl.cise.plpfa21.assignment3.ast.IFunctionCallExpression;
 import edu.ufl.cise.plpfa21.assignment3.ast.IFunctionDeclaration;
 import edu.ufl.cise.plpfa21.assignment3.ast.IIdentExpression;
@@ -490,4 +491,9 @@ public class TypeCheckVisitor implements ASTVisitor {
 		return dec;
 	}
 
+	@Override
+	public Object visitIExpressionStatement(IExpressionStatement n, Object arg) throws Exception {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
