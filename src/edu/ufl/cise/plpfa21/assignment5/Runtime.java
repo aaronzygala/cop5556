@@ -60,15 +60,15 @@ public class Runtime {
 	}
 	
 	public static boolean eq_string(String arg1, String arg2) {
-		return arg1 == arg2;
+		return arg1.equals(arg2);
 	}
 	public static boolean ne_string(String arg1, String arg2) {
-		return arg1 != arg2;
+		return !arg1.equals(arg2);
 	}
 	public static boolean lt_string(String arg1,String arg2) {
-		return arg1.startsWith(arg2);
+		return arg2.startsWith(arg1);
 	}
 	public static boolean gt_string(String arg1, String arg2) {
-		return !arg1.startsWith(arg2);
+		return !arg2.startsWith(arg1);
 	}
 }

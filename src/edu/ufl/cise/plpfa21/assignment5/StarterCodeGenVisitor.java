@@ -252,8 +252,8 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 	public Object visitIIdentExpression(IIdentExpression n, Object arg) throws Exception {
 		MethodVisitor mv = ((MethodVisitorLocalVarTable) arg).mv;
 		
-		
-		
+		mv.visitFieldInsn(GETSTATIC,  className,  n.getName().getName(), n.getType().getDesc());
+		/*
 		//System.out.println("ARG: " + arg);
 		if(n.getType().isBoolean() || n.getType().isInt())
 		{
@@ -266,7 +266,7 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 			mv.visitInsn(ALOAD);
 
 			//mv.visitVarInsn(ALOAD, n.getName().getSlot());
-		}
+		}*/
 		return null;
 	}
 
