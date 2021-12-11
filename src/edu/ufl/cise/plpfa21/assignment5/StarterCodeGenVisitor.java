@@ -107,70 +107,61 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 		switch(op) {
 			case EQUALS->{
 				if(operandType.isInt())
-					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "eq_int", "(I)I",false);	
+					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "eq_int", "(II)Z",false);	
 				else if(operandType.isString())
-					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "eq_string", "(Ljava/lang/String;)Ljava/lang/String;",false);
+					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "eq_string", "(Ljava/lang/String;Ljava/lang/String;)Z",false);
 				else if(operandType.isBoolean())
-					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "eq_bool", "(Z)Z",false);
+					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "eq_bool", "(ZZ)Z",false);
 			}
 			case NOT_EQUALS->{
 				if(operandType.isInt())
-					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "ne_int", "(I)I",false);	
+					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "ne_int", "(II)Z",false);	
 				else if(operandType.isString())
-					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "ne_string", "(Ljava/lang/String;)Ljava/lang/String;",false);
+					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "ne_string", "(Ljava/lang/String;Ljava/lang/String;)Z",false);
 				else if(operandType.isBoolean())
-					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "ne_bool", "(Z)Z",false);
+					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "ne_bool", "(ZZ)Z",false);
 			}
 			case LT->{
 				if(operandType.isInt())
-					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "lt_int", "(I)I",false);	
+					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "lt_int", "(II)Z",false);	
 				else if(operandType.isString())
-					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "lt_string", "(Ljava/lang/String;)Ljava/lang/String;",false);
+					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "lt_string", "(Ljava/lang/String;Ljava/lang/String;)Z",false);
 				else if(operandType.isBoolean())
-					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "lt_bool", "(Z)Z",false);
+					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "lt_bool", "(ZZ)Z",false);
 			}
 			case GT->{
 				if(operandType.isInt())
-					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "gt_int", "(I)I",false);	
+					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "gt_int", "(II)Z",false);	
 				else if(operandType.isString())
-					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "gt_string", "(Ljava/lang/String;)Ljava/lang/String;",false);
+					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "gt_string", "(Ljava/lang/String;Ljava/lang/String;)Z",false);
 				else if(operandType.isBoolean())
-					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "gt_bool", "(Z)Z",false);
+					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "gt_bool", "(ZZ)Z",false);
 			}
 			case PLUS -> {
 				if(operandType.isInt())
-					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "minus", "(I)I",false);	
+					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "minus", "(II)I",false);	
 				else if(operandType.isString())
-					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "concat", "(Ljava/lang/String;)Ljava/lang/String;",false);
+					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "concat", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",false);
 			}
 			case MINUS -> {
-				mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "minus", "(I)I",false);					
+				mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "minus", "(II)I",false);					
 			}
 			case TIMES -> {
-				mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "times", "(I)I",false);					
+				mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "times", "(II)I",false);					
 			}
 			case DIV -> {
-				mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "div", "(I)I",false);					
+				mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "div", "(II)I",false);					
 			}
 			case OR -> {
-				mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "or", "(Z)Z",false);					
+				mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "or", "(ZZ)Z",false);					
 			}
 			case AND -> {
 				if (operandType.isBoolean()) {
-					//this is complicated.  Use a Java method instead
-	//						Label brLabel = new Label();
-	//						Label after = new Label();
-	//						mv.visitJumpInsn(IFEQ,brLabel);
-	//						mv.visitLdcInsn(0);
-	//						mv.visitJumpInsn(GOTO,after);
-	//						mv.visitLabel(brLabel);
-	//						mv.visitLdcInsn(1);
-	//						mv.visitLabel(after);
-					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "and", "(Z)Z",false);
+					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "and", "(ZZ)Z",false);
 				}
-				else { //argument is List
+				else {
 					throw new UnsupportedOperationException("SKIP THIS");
-			}
+				}
 			}
 			default -> throw new UnsupportedOperationException("compiler error");
 		}
@@ -260,16 +251,21 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 	@Override
 	public Object visitIIdentExpression(IIdentExpression n, Object arg) throws Exception {
 		MethodVisitor mv = ((MethodVisitorLocalVarTable) arg).mv;
-
+		
+		
+		
 		//System.out.println("ARG: " + arg);
 		if(n.getType().isBoolean() || n.getType().isInt())
 		{
 			//System.out.println(" SLOT: " + n.getName().getSlot());
-			mv.visitVarInsn(ILOAD, n.getName().getSlot());
+			mv.visitInsn(ILOAD);
+			//mv.visitLocalVar(ILOAD, n.getName().getSlot());
 		}
 		else
 		{
-			mv.visitVarInsn(ALOAD, n.getName().getSlot());
+			mv.visitInsn(ALOAD);
+
+			//mv.visitVarInsn(ALOAD, n.getName().getSlot());
 		}
 		return null;
 	}
@@ -291,7 +287,17 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 
 	@Override
 	public Object visitIIfStatement(IIfStatement n, Object arg) throws Exception {
-		throw new UnsupportedOperationException("TO IMPLEMENT");
+		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;
+		IExpression e = n.getGuardExpression();
+		
+		if(e != null) {
+			e.visit(this, arg);
+			//mv.visitFieldInsn(PUTSTATIC, nameDef.getIdent().getName(), nameDef.getType().getDesc(), classDesc);
+		}
+		IBlock b = n.getBlock();
+		b.visit(this, arg);
+		
+		return null;
 	}
 
 	@Override
@@ -472,15 +478,6 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 		}
 		case BANG -> {
 			if (operandType.isBoolean()) {
-				//this is complicated.  Use a Java method instead
-//				Label brLabel = new Label();
-//				Label after = new Label();
-//				mv.visitJumpInsn(IFEQ,brLabel);
-//				mv.visitLdcInsn(0);
-//				mv.visitJumpInsn(GOTO,after);
-//				mv.visitLabel(brLabel);
-//				mv.visitLdcInsn(1);
-//				mv.visitLabel(after);
 				mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "not", "(Z)Z",false);
 			}
 			else { //argument is List
@@ -494,18 +491,7 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 
 	@Override
 	public Object visitIWhileStatement(IWhileStatement n, Object arg) throws Exception {
-		//get the method visitor from the arg
-		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;
-		IExpression e = n.getGuardExpression();
-		 //the return statement has an expression
-		e.visit(this, arg);  //generate code to leave value of expression on top of stack.
-		IType type = e.getType();
-		if (type.isBoolean()) {
-			IBlock b = n.getBlock();
-			b.visit(this, arg);
-			//mv.visitMethodInsn(NOP, listClass, className, classDesc);
-		}
-		return null;
+		throw new UnsupportedOperationException();
 	}
 
 
@@ -536,20 +522,7 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 
 	@Override
 	public Object visitIAssignmentStatement(IAssignmentStatement n, Object arg) throws Exception {
-		//get the method visitor from the arg
-		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;
-		IExpression e = n.getLeft();
-		if (e != null) {  //the return statement has an expression
-			e.visit(this, arg);  //generate code to leave value of expression on top of stack.
-			//use type of expression to determine which return instruction to use
-			IType type = e.getType();
-			if (type.isInt() || type.isBoolean()) {mv.visitInsn(IRETURN);}
-			else  {mv.visitInsn(ARETURN);}
-		}
-		else { //there is no argument, (and we have verified duirng type checking that function has void return type) so use this return statement.  
-			mv.visitInsn(RETURN);
-		}
-		return null;
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
