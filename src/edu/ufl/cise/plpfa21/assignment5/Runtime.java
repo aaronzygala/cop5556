@@ -69,6 +69,6 @@ public class Runtime {
 		return arg2.startsWith(arg1);
 	}
 	public static boolean gt_string(String arg1, String arg2) {
-		return !arg2.startsWith(arg1);
+		return arg1.startsWith(arg2);
 	}
 }

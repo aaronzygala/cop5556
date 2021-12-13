@@ -7,7 +7,8 @@ import edu.ufl.cise.plpfa21.assignment3.ast.IIdentifier;
 public class Identifier__ extends ASTNode__ implements IIdentifier {
 
 	String name;
-
+	public boolean local;
+	
 	public Identifier__(int line, int posInLine, String text, String name) {
 		super(line, posInLine, text);
 		this.name = name;
@@ -47,5 +48,12 @@ public class Identifier__ extends ASTNode__ implements IIdentifier {
 	public void setSlot(int slot) {
 		this.slot = slot;
 	}
-	
+	@Override
+	public boolean isLocal() {
+		return local;
+	}
+	@Override
+	public void setLocal(boolean l) {
+		this.local = l;
+	}
 }

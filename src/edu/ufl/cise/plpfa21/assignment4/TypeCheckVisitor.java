@@ -261,11 +261,11 @@ public class TypeCheckVisitor implements ASTVisitor {
 		IType type = (IType) n.getType();
 		IType varType = type != null ? (IType) type.visit(this, null) : Type__.undefinedType;
 		if (arg instanceof IMutableGlobal || arg instanceof IImmutableGlobal) {
+			n.getIdent().setLocal(false);
 			check(symtab.insert(name, (IDeclaration) arg), n, "Variable " + name + "already declared in this scope");
-			n.setLocal(false);
 		} else {
+			n.getIdent().setLocal(true);
 			check(symtab.insert(name, n), n, "Variable " + name + "already declared in this scope");
-			n.setLocal(true);
 		}
 		return varType;
 	}

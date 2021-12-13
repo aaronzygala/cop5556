@@ -7,5 +7,6 @@ public interface IIdentifier extends IASTNode {
 	void setDec(IDeclaration dec);
 	void setSlot(int i);
 	int getSlot();
-	
+	void setLocal(boolean l);
+	boolean isLocal();
 }
