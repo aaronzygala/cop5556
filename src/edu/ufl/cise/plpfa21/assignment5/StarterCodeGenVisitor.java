@@ -246,7 +246,26 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 
 	@Override
 	public Object visitIFunctionCallExpression(IFunctionCallExpression n, Object arg) throws Exception {
-		throw new UnsupportedOperationException("TO IMPLEMENT");
+		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;
+		IIdentifier identifier = n.getName();
+		String methodDesc = "";
+		
+		List<IExpression> arguments = n.getArgs();
+		if(n.getArgs().size() > 0) {
+			methodDesc = "(";
+			for (IExpression argument : arguments)
+			{
+				argument.visit(this, arg);
+				methodDesc += argument.getType().getDesc();
+			}
+			methodDesc += ")" + n.getType().getDesc();
+		}
+		else {
+			methodDesc = "()" + n.getType().getDesc();
+		}
+		mv.visitMethodInsn(INVOKESTATIC, className, identifier.getName(), methodDesc,false);
+
+		return null;
 	}
 
 	@Override
@@ -274,7 +293,6 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 	@Override
 	public Object visitIIdentifier(IIdentifier n, Object arg) throws Exception {
 		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;
-
 		List<LocalVarInfo> localVars = ((MethodVisitorLocalVarTable)arg).localVars;
 
 		for (int i = 0; i < localVars.size(); i++)
@@ -283,6 +301,7 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 			{
 				n.setLocal(true);
 				n.setSlot(i);
+				break;
 			}
 		}
 
@@ -547,27 +566,25 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 	@Override
 	public Object visitIAssignmentStatement(IAssignmentStatement n, Object arg) throws Exception {
 		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;
-		n.getRight().visit(this,  arg);
-		//n.getLeft().visit(this,  arg);
-		IIdentifier leftIdent = ((IIdentExpression) n.getLeft()).getName();
-		IType rightType = n.getRight().getType();
-		leftIdent.visit(this,  arg);
-		if(leftIdent.isLocal()) {
-			if(rightType.isString())
-				mv.visitVarInsn(ASTORE, leftIdent.getSlot());
-			else
-				mv.visitVarInsn(ISTORE, leftIdent.getSlot());
+		
+		if(n.getRight() != null) {
+			n.getRight().visit(this,  arg);
+			IType rightType = n.getRight().getType();
+			IIdentifier leftIdent = ((IIdentExpression) n.getLeft()).getName();
+			leftIdent.visit(this,  arg);
+			if(leftIdent.isLocal()) {
+				if(rightType.isString())
+					mv.visitVarInsn(ASTORE, leftIdent.getSlot());
+				else
+					mv.visitVarInsn(ISTORE, leftIdent.getSlot());
+			}
+			else {
+				mv.visitFieldInsn(PUTSTATIC, className, leftIdent.getName(), rightType.getDesc());
+			}
 		}
 		else {
-			mv.visitFieldInsn(PUTSTATIC, className, leftIdent.getName(), rightType.getDesc());
-		}
-		//IIdentifier leftIdent = ((IIdentExpression) n.getLeft()).getName();
-		//IType rightType = n.getRight().getType();
-
-		//if(n.getRight() != null) {
-		//	n.getRight().visit(this, arg);
-		//}
-		//mv.visitFieldInsn(PUTSTATIC, className, leftIdent.getName(), rightType.getDesc());
+			((IFunctionCallExpression)n.getLeft()).visit(this, arg);
+		}		
 		return null;
 	}
 
