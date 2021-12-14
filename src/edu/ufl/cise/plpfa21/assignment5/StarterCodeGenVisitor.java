@@ -106,6 +106,32 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 		IType resultType = n.getType();
 		IType operandType = n.getLeft().getType();
 		switch(op) {
+			case PLUS -> {
+				if(operandType.isInt())
+					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "plus", "(II)I",false);	
+				else if(operandType.isString())
+					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "concat", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",false);
+			}
+			case MINUS -> {
+				mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "minus", "(II)I",false);					
+			}
+			case TIMES -> {
+				mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "times", "(II)I",false);					
+			}
+			case DIV -> {
+				mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "div", "(II)I",false);					
+			}
+			case OR -> {
+				mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "or", "(ZZ)Z",false);					
+			}
+			case AND -> {
+				if (operandType.isBoolean()) {
+					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "and", "(ZZ)Z",false);
+				}
+				else {
+					throw new UnsupportedOperationException("SKIP THIS");
+				}
+			}
 			case EQUALS->{
 				if(operandType.isInt())
 					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "eq_int", "(II)Z",false);	
@@ -138,32 +164,7 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 				else if(operandType.isBoolean())
 					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "gt_bool", "(ZZ)Z",false);
 			}
-			case PLUS -> {
-				if(operandType.isInt())
-					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "plus", "(II)I",false);	
-				else if(operandType.isString())
-					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "concat", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",false);
-			}
-			case MINUS -> {
-				mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "minus", "(II)I",false);					
-			}
-			case TIMES -> {
-				mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "times", "(II)I",false);					
-			}
-			case DIV -> {
-				mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "div", "(II)I",false);					
-			}
-			case OR -> {
-				mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "or", "(ZZ)Z",false);					
-			}
-			case AND -> {
-				if (operandType.isBoolean()) {
-					mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "and", "(ZZ)Z",false);
-				}
-				else {
-					throw new UnsupportedOperationException("SKIP THIS");
-				}
-			}
+			
 			default -> throw new UnsupportedOperationException("compiler error");
 		}
 		return null;
@@ -250,13 +251,12 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 		IIdentifier identifier = n.getName();
 		String methodDesc = "";
 		
-		List<IExpression> arguments = n.getArgs();
+		List<IExpression> args = n.getArgs();
 		if(n.getArgs().size() > 0) {
 			methodDesc = "(";
-			for (IExpression argument : arguments)
-			{
-				argument.visit(this, arg);
-				methodDesc += argument.getType().getDesc();
+			for (IExpression a : args){
+				a.visit(this, arg);
+				methodDesc += a.getType().getDesc();
 			}
 			methodDesc += ")" + n.getType().getDesc();
 		}
@@ -273,18 +273,15 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;
 		IIdentifier ident = n.getName();
 		ident.visit(this, arg);
-		IType type = n.getType();
 
-		if (ident.isLocal())
-		{
-			if(type.isString())
+		if (!ident.isLocal()){
+			mv.visitFieldInsn(GETSTATIC, className, ident.getName(), n.getType().getDesc());
+		}
+		else{
+			if(n.getType().isString())
 				mv.visitVarInsn(ALOAD, ident.getSlot());
 			else
 				mv.visitVarInsn(ILOAD, ident.getSlot());
-		}
-		else
-		{
-			mv.visitFieldInsn(GETSTATIC, className, ident.getName(), type.getDesc());
 		}
 
 		return null;
@@ -292,17 +289,15 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 
 	@Override
 	public Object visitIIdentifier(IIdentifier n, Object arg) throws Exception {
-		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;
 		List<LocalVarInfo> localVars = ((MethodVisitorLocalVarTable)arg).localVars;
-
-		for (int i = 0; i < localVars.size(); i++)
-		{
-			if (n.getName().equals(localVars.get(i).name))
-			{
+		int i = 0;
+		for (LocalVarInfo localVar : localVars){
+			if (n.getName().equals(localVars.get(i).name)){
 				n.setLocal(true);
 				n.setSlot(i);
 				break;
 			}
+			i++;
 		}
 
 		return null;
@@ -315,13 +310,11 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 		
 		if(e != null) {
 			e.visit(this, arg);
-			//mv.visitFieldInsn(PUTSTATIC, nameDef.getIdent().getName(), nameDef.getType().getDesc(), classDesc);
 		}
-		Label ifLabel = new Label();
-		mv.visitJumpInsn(IFEQ, ifLabel);
-		IBlock b = n.getBlock();
-		b.visit(this, arg);
-		mv.visitLabel(ifLabel);
+		Label l0 = new Label();
+		mv.visitJumpInsn(IFEQ, l0);
+		n.getBlock().visit(this, arg);
+		mv.visitLabel(l0);
 		
 		return null;
 	}
@@ -351,23 +344,17 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 	@Override
 	public Object visitILetStatement(ILetStatement n, Object arg) throws Exception {
 		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;
-
-		INameDef nameDef = n.getLocalDef();
-		nameDef.visit(this, arg);
+		n.getLocalDef().visit(this, arg);
 
 		IExpression e = n.getExpression();
-		if (e != null)
-		{
+		if (e != null){
 			e.visit(this, arg);
 			if(e.getType().isString())
-				mv.visitVarInsn(ASTORE, nameDef.getIdent().getSlot());
+				mv.visitVarInsn(ASTORE, n.getLocalDef().getIdent().getSlot());
 			else
-				mv.visitVarInsn(ISTORE, nameDef.getIdent().getSlot());
+				mv.visitVarInsn(ISTORE, n.getLocalDef().getIdent().getSlot());
 		}
-
-		IBlock block = n.getBlock();
-		block.visit(this, arg);
-
+		n.getBlock().visit(this, arg);
 		return null;
 	}
 		
@@ -385,19 +372,13 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 
 	@Override
 	public Object visitINameDef(INameDef n, Object arg) throws Exception {
-		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;
-		//List<LocalVarInfo> varList = ((MethodVisitorLocalVarTable)arg).localVars;	
-		
+		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;		
 		IIdentifier ident = n.getIdent();
-		IType type = n.getType();
 		
 		if(ident.isLocal()) {
 			List<LocalVarInfo> localVars = ((MethodVisitorLocalVarTable)arg).localVars;
 			ident.setSlot(localVars.size());
-			//Label start = new Label();
-			//mv.visitLabel(start);
-			localVars.add(new LocalVarInfo(ident.getName(), type.getDesc(), null, null));
-			//addLocals((MethodVisitorLocalVarTable)arg, start, null);
+			localVars.add(new LocalVarInfo(ident.getName(), n.getType().getDesc(), null, null));
 		}
 		return null;
 	}
@@ -518,21 +499,14 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 	public Object visitIWhileStatement(IWhileStatement n, Object arg) throws Exception {
 		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;
 		IExpression e = n.getGuardExpression();
-		
-
-		Label whileLabel1 = new Label();
-		
-		mv.visitJumpInsn(GOTO, whileLabel1);
-		Label whileLabel2 = new Label();
-		
-		mv.visitLabel(whileLabel2);
+		Label l0 = new Label();
+		mv.visitJumpInsn(GOTO, l0);
+		Label l1 = new Label();
+		mv.visitLabel(l1);
 		n.getBlock().visit(this,  arg);
-		mv.visitLabel(whileLabel1);
-		
+		mv.visitLabel(l0);
 		e.visit(this,  arg);
-		
-		mv.visitJumpInsn(IFNE, whileLabel2);
-		
+		mv.visitJumpInsn(IFNE, l1);
 		return null;
 	}
 
@@ -545,14 +519,11 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 		String typeDesc = nameDef.getType().getDesc();
 		FieldVisitor fieldVisitor = cw.visitField(ACC_PUBLIC | ACC_STATIC, varName, typeDesc, null, null);
 		fieldVisitor.visitEnd();
-		//generate code to initialize field. 
 		if(n.getExpression() != null) {
 			IExpression e = n.getExpression();
 			e.visit(this, arg); 
 			mv.visitFieldInsn(PUTSTATIC, className, varName, typeDesc);	
 		}
-		//generate code to leave value of expression on top of stack
-		
 		return null;
 	}
 
@@ -567,7 +538,10 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 	public Object visitIAssignmentStatement(IAssignmentStatement n, Object arg) throws Exception {
 		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;
 		
-		if(n.getRight() != null) {
+		if(n.getRight() == null) {
+			((IFunctionCallExpression)n.getLeft()).visit(this, arg);
+		}
+		else {
 			n.getRight().visit(this,  arg);
 			IType rightType = n.getRight().getType();
 			IIdentifier leftIdent = ((IIdentExpression) n.getLeft()).getName();
@@ -581,9 +555,6 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 			else {
 				mv.visitFieldInsn(PUTSTATIC, className, leftIdent.getName(), rightType.getDesc());
 			}
-		}
-		else {
-			((IFunctionCallExpression)n.getLeft()).visit(this, arg);
 		}		
 		return null;
 	}
